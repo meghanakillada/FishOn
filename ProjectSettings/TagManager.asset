@@ -3,7 +3,13 @@
 --- !u!78 &1
 TagManager:
   serializedVersion: 2
-  tags: []
+  tags:
+  - Background
+  - Water
+  - Dock
+  - Hook
+  - Fish
+  - UI
   layers:
   - Default
   - TransparentFX
@@ -40,4 +46,25 @@ TagManager:
   m_SortingLayers:
   - name: Default
     uniqueID: 0
+    locked: 0
+  - name: Background
+    uniqueID: 1846224593
+    locked: 0
+  - name: Water
+    uniqueID: 3702824207
+    locked: 0
+  - name: Dock
+    uniqueID: 2366661395
+    locked: 0
+  - name: Player
+    uniqueID: 4146433939
+    locked: 0
+  - name: Hook
+    uniqueID: 4048777385
+    locked: 0
+  - name: Fish
+    uniqueID: 1453651847
+    locked: 0
+  - name: UI
+    uniqueID: 4034245505
     locked: 0
