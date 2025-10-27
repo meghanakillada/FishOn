@@ -12,39 +12,69 @@ public class HookController : MonoBehaviour
 
     [Header("Line")]
     public LineRenderer line;
-    private Transform origin;
+    [SerializeField] private string lineSortingLayer = "Hook";
+    [SerializeField] private int lineSortingOrder = 100;
 
     [Header("Catch")]
     public Transform catchAnchor; // empty child on hook tip (optional)
     private Fish caughtFish;
 
+    private Transform origin;
     private HookState state = HookState.Idle;
     private float targetDepth = 0f;
+    private System.Action<bool> onFinished;
+    private Rigidbody2D rb;
 
-    System.Action<bool> onFinished;
+    public float CurrentDepth => origin ? Mathf.Max(0f, origin.position.y - transform.position.y) : 0f;
 
-    Rigidbody2D rb;
+    // -------------------------------------------------------------
 
     public void Init(Transform origin, System.Action<bool> onFinished)
     {
         this.origin = origin;
         this.onFinished = onFinished;
+
         rb = GetComponent<Rigidbody2D>();
         if (!line) line = GetComponent<LineRenderer>();
+        SetupLineRenderer();
+
+        GameManager.Instance.RegisterHook(origin, this);
         targetDepth = 0f;
     }
+
+    private void SetupLineRenderer()
+    {
+        if (!line) return;
+
+        line.useWorldSpace = true;
+        line.positionCount = 2;
+        line.startWidth = 0.03f;
+        line.endWidth = 0.03f;
+        line.sortingLayerName = lineSortingLayer;
+        line.sortingOrder = lineSortingOrder;
+
+        // Ensure visible color (white, opaque)
+        var grad = new Gradient();
+        grad.SetKeys(
+            new[] { new GradientColorKey(Color.white, 0f), new GradientColorKey(Color.white, 1f) },
+            new[] { new GradientAlphaKey(1f, 0f), new GradientAlphaKey(1f, 1f) }
+        );
+        line.colorGradient = grad;
+    }
+
+    // -------------------------------------------------------------
 
     public void Cast()
     {
         state = HookState.InWater;
-        targetDepth = 0f; // start at surface
+        targetDepth = 0f;
     }
 
     void Update()
     {
         if (origin == null) return;
 
-        // Input: control depth (Down = deeper), Up = reel
+        // --- Input ---
         if (state == HookState.InWater)
         {
             if (Input.GetKey(KeyCode.DownArrow))
@@ -54,7 +84,7 @@ public class HookController : MonoBehaviour
                 state = HookState.Reeling;
         }
 
-        // Motion
+        // --- Motion ---
         Vector3 desiredPos = origin.position + Vector3.down * targetDepth;
 
         if (state == HookState.InWater)
@@ -62,7 +92,7 @@ public class HookController : MonoBehaviour
         else if (state == HookState.Reeling)
             transform.position = Vector3.MoveTowards(transform.position, origin.position, reelSpeed * Time.deltaTime);
 
-        // Arrived at origin?
+        // --- Done reeling ---
         if (state == HookState.Reeling && Vector3.Distance(transform.position, origin.position) <= attachDistanceDone)
         {
             DeliverCatch();
@@ -71,7 +101,7 @@ public class HookController : MonoBehaviour
             return;
         }
 
-        // Update line
+        // --- Draw the line every frame ---
         if (line)
         {
             line.positionCount = 2;
@@ -79,6 +109,8 @@ public class HookController : MonoBehaviour
             line.SetPosition(1, transform.position);
         }
     }
+
+    // -------------------------------------------------------------
 
     private void DeliverCatch()
     {
@@ -99,6 +131,7 @@ public class HookController : MonoBehaviour
     private void OnTriggerEnter2D(Collider2D other)
     {
         if (caughtFish != null) return;
+
         Fish f = other.GetComponent<Fish>();
         if (f != null && !f.IsHooked)
         {
@@ -107,6 +140,7 @@ public class HookController : MonoBehaviour
             if (catchAnchor) f.transform.SetParent(catchAnchor, true);
             else f.transform.SetParent(transform, true);
             f.transform.localPosition = Vector3.zero;
+
             GameManager.Instance.PlaySplashOrPop(true); // pop/chime on catch
         }
     }

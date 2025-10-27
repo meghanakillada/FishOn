@@ -104,7 +104,7 @@ Rigidbody2D:
   m_Mass: 1
   m_LinearDrag: 0
   m_AngularDrag: 0.05
-  m_GravityScale: 1
+  m_GravityScale: 0
   m_Material: {fileID: 0}
   m_IncludeLayers:
     serializedVersion: 2
@@ -115,7 +115,7 @@ Rigidbody2D:
   m_Interpolate: 0
   m_SleepingMode: 1
   m_CollisionDetection: 0
-  m_Constraints: 0
+  m_Constraints: 4
 --- !u!58 &132031936564526385
 CircleCollider2D:
   m_ObjectHideFlags: 0
@@ -192,10 +192,9 @@ LineRenderer:
   m_LightmapParameters: {fileID: 0}
   m_SortingLayerID: -246189911
   m_SortingLayer: 5
-  m_SortingOrder: 0
+  m_SortingOrder: 100
   m_Positions:
   - {x: 0, y: 0, z: 0}
-  - {x: 0, y: 0, z: 1}
   m_Parameters:
     serializedVersion: 3
     widthMultiplier: 1
@@ -203,8 +202,8 @@ LineRenderer:
       serializedVersion: 2
       m_Curve:
       - serializedVersion: 3
-        time: 0
-        value: 1
+        time: 0.050937653
+        value: 0.03012085
         inSlope: 0
         outSlope: 0
         tangentMode: 0
@@ -272,6 +271,8 @@ MonoBehaviour:
   maxDepth: 10
   attachDistanceDone: 0.2
   line: {fileID: 1839386786629614571}
+  lineSortingLayer: Hook
+  lineSortingOrder: 100
   catchAnchor: {fileID: 1192309198357376167}
 --- !u!1 &5575771694234526004
 GameObject:
