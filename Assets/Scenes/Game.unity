@@ -1280,14 +1280,12 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: c527a5fc4b924ec4795754c87af5139d, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  animator: {fileID: 280296578}
+  hookOrigin: {fileID: 1375219538}
+  hookPrefab: {fileID: 6698085004662839432, guid: df356367d27b5504d9fa2a7b58ec29af, type: 3}
   moveSpeed: 6
   minX: -8
   maxX: 8
-  hookOrigin: {fileID: 1375219538}
-  hookPrefab: {fileID: 6698085004662839432, guid: df356367d27b5504d9fa2a7b58ec29af, type: 3}
-  playerAnim: {fileID: 280296579}
-  sfx: {fileID: 0}
-  castSfx: {fileID: 0}
 --- !u!1 &1677859135
 GameObject:
   m_ObjectHideFlags: 0

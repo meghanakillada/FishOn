@@ -2,62 +2,94 @@ using UnityEngine;
 
 public class Fish : MonoBehaviour
 {
+    [Header("Stats")]
     public int points = 10;
     public float speed = 2f;
     public Vector2 verticalSway = new Vector2(0.5f, 2f); // amplitude, frequency
     public bool avoidsHook = false;
 
-    [Header("Bounds")]
+    [Header("Swim Bounds")]
     public float minX = -10f, maxX = 10f, minY = -4f, maxY = 0f;
 
     public bool IsHooked { get; private set; }
 
-    Rigidbody2D rb;
-    float dir = 1f;
-    float swayT;
+    private Rigidbody2D rb;
+    private float dir = 1f;     // 1 = right, -1 = left
+    private float swayT;
 
     void Awake()
     {
         rb = GetComponent<Rigidbody2D>();
+
+        // Random initial direction (left or right)
         dir = Random.value < 0.5f ? -1f : 1f;
         swayT = Random.value * Mathf.PI * 2f;
+
+        // Ensure correct facing on start
+        Flip();
     }
 
     void Update()
     {
         if (IsHooked) return;
 
+        float previousDir = dir;
+
         // Wander horizontally
         Vector3 pos = transform.position;
         pos.x += dir * speed * Time.deltaTime;
 
-        // Vertical sway
+        // Vertical sway (gentle up/down)
         swayT += verticalSway.y * Time.deltaTime;
         pos.y += Mathf.Sin(swayT) * verticalSway.x * Time.deltaTime;
 
         transform.position = pos;
 
-        // Flip & bounce at bounds
-        if (transform.position.x < minX) { dir = 1f; Flip(); }
-        if (transform.position.x > maxX) { dir = -1f; Flip(); }
+        // Bounce off horizontal bounds
+        if (transform.position.x < minX)
+        {
+            dir = 1f;
+        }
+        else if (transform.position.x > maxX)
+        {
+            dir = -1f;
+        }
 
-        // Optional: avoid hook
+        // Optional: avoid hook if close
         if (avoidsHook && GameManager.Instance.CurrentHookPos(out Vector3 hookPos))
         {
             float d = Vector3.Distance(hookPos, transform.position);
-            if (d < 2f) dir = Mathf.Sign(transform.position.x - hookPos.x); // dart away
+            if (d < 2f)
+            {
+                dir = Mathf.Sign(transform.position.x - hookPos.x); // swim away
+            }
         }
+
+        // Flip only when direction changes
+        if (Mathf.Sign(previousDir) != Mathf.Sign(dir))
+            Flip();
     }
 
-    void Flip()
+    private void Flip()
     {
-        var s = transform.localScale; s.x = Mathf.Abs(s.x) * (dir > 0 ? 1 : -1); transform.localScale = s;
+        // Make fish face its swimming direction
+        Vector3 s = transform.localScale;
+        s.x = Mathf.Abs(s.x) * (dir > 0 ? 1 : -1);
+        transform.localScale = s;
     }
 
     public void OnHooked(HookController hook)
     {
         IsHooked = true;
-        var col = GetComponent<Collider2D>(); if (col) col.enabled = false;
-        if (rb) { rb.isKinematic = true; rb.velocity = Vector2.zero; }
+
+        // Disable physics while hooked
+        Collider2D col = GetComponent<Collider2D>();
+        if (col) col.enabled = false;
+
+        if (rb)
+        {
+            rb.isKinematic = true;
+            rb.velocity = Vector2.zero;
+        }
     }
 }

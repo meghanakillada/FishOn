@@ -2,33 +2,77 @@ using UnityEngine;
 
 public class PlayerController : MonoBehaviour
 {
-    [Header("Movement")]
-    [Tooltip("Horizontal move speed in world units/sec")]
-    public float moveSpeed = 6f;
-    [Tooltip("Clamp player X within these bounds")]
-    public float minX = -8f, maxX = 8f;
+    [Header("References")]
+    [Tooltip("Animator on your PlayerSprite (the object that renders the player).")]
+    public Animator animator;
 
-    [Header("Hook Setup")]
-    [Tooltip("Where the hook spawns from (tip of the rod)")]
+    [Tooltip("Where the hook spawns from (rod tip / hand).")]
     public Transform hookOrigin;
-    [Tooltip("Hook prefab with HookController")]
+
+    [Tooltip("Hook prefab with your HookController.")]
     public HookController hookPrefab;
 
-    [Header("Animation")]
-    [Tooltip("Animator driver for player (Idle/Cast/Reel)")]
-    public PlayerAnimDriver playerAnim;
-
-    [Header("SFX (optional)")]
-    public AudioSource sfx;
-    public AudioClip castSfx;
-
-    // runtime
     private HookController currentHook;
+
+    [Header("Movement (optional)")]
+    public float moveSpeed = 6f;
+    public float minX = -8f, maxX = 8f;
 
     void Update()
     {
         HandleMovement();
-        HandleCastingAndReelAnim();
+
+        // CAST: press Space once if no active hook
+        if (Input.GetKeyDown(KeyCode.Space) && currentHook == null)
+        {
+            StartCast();
+        }
+
+        // REEL while UpArrow is held (only if a hook exists)
+        if (currentHook != null)
+        {
+            bool reelHeld = Input.GetKey(KeyCode.UpArrow);
+
+            if (reelHeld)
+            {
+                // Transition Cast -> Reel
+                animator.SetBool("IsCasting", false);  // leave Cast
+                animator.SetBool("IsReeling", true);   // enter Reel
+                currentHook.StartReel();               // tell hook to reel (method on your HookController)
+            }
+            else
+            {
+                // Stop Reel (will go Reel -> Idle)
+                animator.SetBool("IsReeling", false);
+                currentHook.StopReel();                // optional, if your hook supports pausing reel
+            }
+        }
+        else
+        {
+            // No hook: ensure we’re not stuck in Reel/Cast
+            animator.SetBool("IsReeling", false);
+            animator.SetBool("IsCasting", false);
+        }
+    }
+
+    private void StartCast()
+    {
+        // Flip animator to Cast and spawn hook
+        animator.ResetTrigger("Cast"); // harmless if you previously tried triggers
+        animator.SetBool("IsReeling", false);
+        animator.SetBool("IsCasting", true);  // Idle -> Cast (and stays there)
+
+        currentHook = Instantiate(hookPrefab, hookOrigin.position, Quaternion.identity);
+        currentHook.Init(hookOrigin, OnHookFinished); // assumes your HookController supports this
+        currentHook.Cast();                            // hook begins dropping / moving into water
+    }
+
+    private void OnHookFinished(bool deliveredCatch)
+    {
+        // Hook returned or despawned: go back to Idle
+        animator.SetBool("IsReeling", false);
+        animator.SetBool("IsCasting", false);
+        currentHook = null;
     }
 
     private void HandleMovement()
@@ -37,60 +81,11 @@ public class PlayerController : MonoBehaviour
         if (Input.GetKey(KeyCode.LeftArrow)) dir -= 1f;
         if (Input.GetKey(KeyCode.RightArrow)) dir += 1f;
 
-        if (Mathf.Abs(dir) > 0f)
+        if (Mathf.Abs(dir) > 0.001f)
         {
-            transform.position += Vector3.right * dir * moveSpeed * Time.deltaTime;
-
-            // Clamp X bounds
-            var p = transform.position;
-            p.x = Mathf.Clamp(p.x, minX, maxX);
+            Vector3 p = transform.position;
+            p.x = Mathf.Clamp(p.x + dir * moveSpeed * Time.deltaTime, minX, maxX);
             transform.position = p;
         }
-    }
-
-    private void HandleCastingAndReelAnim()
-    {
-        // CAST: Space, only if we don't already have a hook
-        if (Input.GetKeyDown(KeyCode.Space) && currentHook == null)
-        {
-            // Play cast anim & sound
-            if (playerAnim) playerAnim.PlayCast();
-            if (sfx && castSfx) sfx.PlayOneShot(castSfx);
-
-            // Spawn and init hook
-            currentHook = Instantiate(hookPrefab, hookOrigin.position, Quaternion.identity);
-            currentHook.Init(hookOrigin, OnHookFinished);
-            currentHook.Cast();
-
-            // (Optional) let a GameManager know which hook is active
-            if (GameManager.Instance) GameManager.Instance.RegisterHook(hookOrigin, currentHook);
-        }
-
-        // REEL ANIM: While UpArrow is held, show reeling; otherwise stop
-        if (currentHook != null)
-        {
-            if (Input.GetKey(KeyCode.UpArrow))
-                playerAnim?.StartReel();
-            else
-                playerAnim?.StopReel();
-        }
-        else
-        {
-            // ensure we return to Idle when no hook active
-            playerAnim?.StopReel();
-        }
-    }
-
-    /// <summary>
-    /// Callback from HookController when the hook returns to the origin.
-    /// deliveredCatch = true if a fish was delivered.
-    /// </summary>
-    private void OnHookFinished(bool deliveredCatch)
-    {
-        currentHook = null;
-        playerAnim?.StopReel();
-
-        // (Optional) any post-catch feedback could go here
-        // e.g., small bump, UI flash, etc.
     }
 }

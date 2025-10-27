@@ -16,7 +16,7 @@ public class HookController : MonoBehaviour
     [SerializeField] private int lineSortingOrder = 100;
 
     [Header("Catch")]
-    public Transform catchAnchor; // empty child on hook tip (optional)
+    public Transform catchAnchor;
     private Fish caughtFish;
 
     private Transform origin;
@@ -26,8 +26,6 @@ public class HookController : MonoBehaviour
     private Rigidbody2D rb;
 
     public float CurrentDepth => origin ? Mathf.Max(0f, origin.position.y - transform.position.y) : 0f;
-
-    // -------------------------------------------------------------
 
     public void Init(Transform origin, System.Action<bool> onFinished)
     {
@@ -50,6 +48,8 @@ public class HookController : MonoBehaviour
         line.positionCount = 2;
         line.startWidth = 0.03f;
         line.endWidth = 0.03f;
+        line.startColor = Color.red;
+        line.endColor = Color.red;
         line.sortingLayerName = lineSortingLayer;
         line.sortingOrder = lineSortingOrder;
 
@@ -61,8 +61,6 @@ public class HookController : MonoBehaviour
         );
         line.colorGradient = grad;
     }
-
-    // -------------------------------------------------------------
 
     public void Cast()
     {
@@ -110,7 +108,6 @@ public class HookController : MonoBehaviour
         }
     }
 
-    // -------------------------------------------------------------
 
     private void DeliverCatch()
     {
@@ -144,4 +141,18 @@ public class HookController : MonoBehaviour
             GameManager.Instance.PlaySplashOrPop(true); // pop/chime on catch
         }
     }
+
+    public void StartReel()
+    {
+        // Begin reeling phase — set state or flag if needed
+        state = HookState.Reeling; // only if you use a HookState enum
+    }
+
+    public void StopReel()
+    {
+        // Stop or pause reeling
+        if (state == HookState.Reeling)
+            state = HookState.InWater; // or Idle, depending on your setup
+    }
+
 }
